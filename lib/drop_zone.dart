@@ -61,20 +61,22 @@ class DropZoneState extends State<DropZone> {
   void initState() {
     super.initState();
 
-    id = Dispatcher.shared.addZone(onDragOver: (e) {
-      final tmp = _isCursorWithinBounds(e);
-      if (!_dragInBounds && tmp) {
-        widget.onDragEnter?.call();
-      } else if (_dragInBounds && !tmp) {
-        widget.onDragExit?.call();
-      }
+    id = Dispatcher.shared.addZone(
+      getIsWithinBounds: _isCursorWithinBounds,
+      onDragOver: (bool withinBounds) {
+        final tmp = withinBounds;
+        if (!_dragInBounds && tmp) {
+          widget.onDragEnter?.call();
+        } else if (_dragInBounds && !tmp) {
+          widget.onDragExit?.call();
+        }
 
-      _dragInBounds = tmp;
-    }, onDrop: (e) {
-      if (_isCursorWithinBounds(e)) {
+        _dragInBounds = tmp;
+      },
+      onDrop: (e) {
         widget.onDrop?.call(e.dataTransfer.files);
-      }
-    });
+      },
+    );
   }
 
   @override

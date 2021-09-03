@@ -8,7 +8,8 @@ class Dispatcher {
   late StreamSubscription<html.MouseEvent> _onDragOverSubscription;
   late StreamSubscription<html.MouseEvent> _onDropSubscription;
 
-  final _dragFunctions = <int, Function(html.MouseEvent)>{};
+  final _isWithinBoundsFunctions = <int, bool Function(html.MouseEvent)>{};
+  final _dragFunctions = <int, Function(bool)>{};
   final _dropFunctions = <int, Function(html.MouseEvent)>{};
 
   var currentZoneId = 0;
@@ -25,8 +26,13 @@ class Dispatcher {
   }
 
   int addZone(
-      {Function(html.MouseEvent e)? onDragOver,
+      {bool Function(html.MouseEvent e)? getIsWithinBounds,
+      Function(bool withinBounds)? onDragOver,
       Function(html.MouseEvent e)? onDrop}) {
+    if (getIsWithinBounds != null) {
+      _isWithinBoundsFunctions[currentZoneId] = getIsWithinBounds;
+    }
+
     if (onDragOver != null) {
       _dragFunctions[currentZoneId] = onDragOver;
     }
@@ -51,16 +57,26 @@ class Dispatcher {
   void _onDrop(html.MouseEvent e) {
     _stopEvent(e);
 
-    for (final f in _dropFunctions.values) {
-      f(e);
+    for (final entry in _dropFunctions.entries.toList().reversed) {
+      if (_isWithinBoundsFunctions[entry.key]!(e)) {
+        entry.value(e);
+        return;
+      }
     }
   }
 
   void _onDragOver(html.MouseEvent e) {
     _stopEvent(e);
 
-    for (final f in _dragFunctions.values) {
-      f(e);
+    bool alreadyGivedEvent = false;
+
+    for (final entry in _dragFunctions.entries.toList().reversed) {
+      if (_isWithinBoundsFunctions[entry.key]!(e) && !alreadyGivedEvent) {
+        entry.value(true);
+        alreadyGivedEvent = true;
+      } else {
+        entry.value(false);
+      }
     }
   }
 }
